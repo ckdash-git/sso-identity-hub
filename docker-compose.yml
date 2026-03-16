@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sso_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sso_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-sso_identity_hub}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sso_user} -d ${POSTGRES_DB:-sso_identity_hub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  casdoor:
+    image: casbin/casdoor:latest
+    container_name: sso_casdoor
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      RUNNING_IN_DOCKER: "true"
+    volumes:
+      - ./casdoor_conf:/conf
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  sso-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sso_server
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
