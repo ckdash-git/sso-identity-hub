@@ -13,7 +13,6 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/mock v0.0.0-20210427183124-c90e2d30f8cf
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.31.0
 	github.com/ulule/limiter/v3 v3.11.2

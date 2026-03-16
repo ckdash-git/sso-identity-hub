@@ -1,0 +1,121 @@
+version: "3.9"
+
+# ============================================================
+# Production Compose Override
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Key differences from the base file:
+#  - PostgreSQL port NOT exposed to the host (internal only)
+#  - Casdoor and sso-server ports NOT directly exposed (Caddy terminates TLS)
+#  - Caddy service added for HTTPS + Let's Encrypt
+#  - All services join one explicit internal network
+#  - Caddy joins both the internal network AND a public-facing network
+#  - Resource limits set on all containers
+#  - Structured log drivers configured
+# ============================================================
+
+services:
+
+  postgres:
+    # Harden: never expose PostgreSQL to the host network in production
+    ports: !reset []
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  casdoor:
+    ports: !reset []
+    networks:
+      - internal
+    volumes:
+      - ./casdoor_conf:/conf:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  sso-server:
+    ports: !reset []
+    environment:
+      SERVER_ENV: production
+      LOG_FORMAT: json
+      LOG_LEVEL: info
+      # Override Postgres host to use Docker service name
+      POSTGRES_HOST: postgres
+      POSTGRES_SSLMODE: disable   # TLS is terminated at Caddy; internal network is trusted
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sso_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3 (QUIC)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    networks:
+      - internal
+    depends_on:
+      - casdoor
+      - sso-server
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  internal:
+    driver: bridge
+    internal: false   # must be false so Caddy can reach Let's Encrypt ACME servers
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  postgres_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+  caddy_logs:
+    driver: local

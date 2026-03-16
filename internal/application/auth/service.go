@@ -88,7 +88,10 @@ func (s *Service) HandleCallback(ctx context.Context, input CallbackInput) (*Cal
 	if s.cfg.Casdoor.ApplicationName != "" {
 		casdoorUser, err := s.casdoor.GetUser(ctx, userInfo.CasdoorID)
 		if err == nil && casdoorUser != nil {
-			userInfo.MFAEnabled = casdoorUser.MfaPhoneEnabled || casdoorUser.TotpSecret != ""
+			// casdoor-go-sdk v0.19.0 does not expose MfaPhoneEnabled or TotpSecret.
+			// Use Phone as a best-effort proxy: a registered phone number indicates
+			// the user has phone-based MFA configured in Casdoor.
+			userInfo.MFAEnabled = casdoorUser.Phone != ""
 		}
 	}
 

@@ -5,8 +5,10 @@ package casdoor
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	casdoorsdk "github.com/casdoor/casdoor-go-sdk/casdoorsdk"
+	"golang.org/x/oauth2"
 
 	"github.com/enterprise/sso-identity-hub/internal/config"
 )
@@ -32,11 +34,13 @@ type Client struct {
 // The SDK stores its configuration globally, which is an SDK constraint;
 // this wrapper isolates that side-effect from the rest of the codebase.
 func NewClient(cfg config.CasdoorConfig) (*Client, error) {
+	// CASDOOR_CERTIFICATE is stored in .env with literal \n escapes; convert to real newlines.
+	cert := strings.ReplaceAll(cfg.Certificate, `\n`, "\n")
 	casdoorsdk.InitConfig(
 		cfg.Endpoint,
 		cfg.ClientID,
 		cfg.ClientSecret,
-		cfg.Certificate,
+		cert,
 		cfg.OrganizationName,
 		cfg.ApplicationName,
 	)
@@ -45,7 +49,7 @@ func NewClient(cfg config.CasdoorConfig) (*Client, error) {
 
 // ExchangeCode exchanges an OAuth 2.0 authorization code for a token pair.
 // The code_verifier is passed through for PKCE validation on the Casdoor side.
-func (c *Client) ExchangeCode(ctx context.Context, code, codeVerifier string) (*casdoorsdk.Token, error) {
+func (c *Client) ExchangeCode(ctx context.Context, code, codeVerifier string) (*oauth2.Token, error) {
 	token, err := casdoorsdk.GetOAuthToken(code, codeVerifier)
 	if err != nil {
 		return nil, fmt.Errorf("casdoor exchange code: %w", err)

@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -50,6 +51,16 @@ func (p PostgresConfig) DSN() string {
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		p.Host, p.Port, p.User, p.Password, p.Database, p.SSLMode,
+	)
+}
+
+// URL returns a PostgreSQL connection URL with the postgres:// scheme.
+// Required by golang-migrate which expects a URL, not a key=value DSN.
+func (p PostgresConfig) URL() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		url.QueryEscape(p.User), url.QueryEscape(p.Password),
+		p.Host, p.Port, p.Database, p.SSLMode,
 	)
 }
 

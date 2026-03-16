@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("database connection failed", zap.Error(err))
 	}
-	if err := database.RunMigrations(cfg.Postgres.DSN(), "./migrations"); err != nil {
+	if err := database.RunMigrations(cfg.Postgres.URL(), "./migrations"); err != nil {
 		logger.Fatal("database migration failed", zap.Error(err))
 	}
 

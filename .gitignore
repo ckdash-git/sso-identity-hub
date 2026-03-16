@@ -1,0 +1,25 @@
+# --- Secrets and credentials (NEVER commit) ---
+secrets/
+.env
+casdoor_conf/app.conf
+
+# --- Go build artifacts ---
+/sso-server
+*.exe
+*.test
+*.out
+dist/
+
+# --- Test coverage ---
+coverage.out
+coverage.html
+
+# --- IDE / OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+
+# --- Docker generated ---
+*.log
