@@ -14,7 +14,7 @@
 # ---- Casdoor (IdP / OIDC / SAML endpoint) ------------------
 auth.cachatto.click {
     reverse_proxy sso_casdoor:8000 {
-        header_up Host {upstream_hostport}
+        header_up Host {http.request.host}
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
         header_up X-Forwarded-Proto {scheme}
@@ -44,7 +44,7 @@ auth.cachatto.click {
 # ---- SSO Identity Hub Go server ----------------------------
 hub.cachatto.click {
     reverse_proxy sso_server:8080 {
-        header_up Host {upstream_hostport}
+        header_up Host {http.request.host}
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
         header_up X-Forwarded-Proto {scheme}
